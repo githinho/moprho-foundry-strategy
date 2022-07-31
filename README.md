@@ -1,5 +1,9 @@
 # Yearn Strategy Foundry Mix
 
+## Strategy
+
+This repo contains a strategy for Morpho protocol on Ethereum mainnet.
+
 ## What you'll find here
 
 - Basic Solidity Smart Contract for creating your own Yearn Strategy ([`Strategy.sol`](src/Strategy.sol))
@@ -7,7 +11,6 @@
 - Configured github template with Foundry framework for starting your yearn strategy project.
 
 - Sample test suite. ([`tests`](src/test/))
-
 
 ## How does it work for the User
 
@@ -111,6 +114,7 @@ make deploy
 Before deploying, update the constructor-args variable within the Makefile to include any parameters applicable. Make sure to seperate each argument only by a space, no commas.
 
 The deploy script is coded to deploy the "Strategy" contract within the Strategy.sol file. This can be updated by simply updating to src/YourContract.sol:YourContract.
+
 # Resources
 
 - Yearn [Discord channel](https://discord.com/invite/6PNv2nF/)
@@ -119,4 +123,3 @@ The deploy script is coded to deploy the "Strategy" contract within the Strategy
 - [Awesome Foundry](https://github.com/crisgarner/awesome-foundry)
 - [Foundry Book](https://book.getfoundry.sh/)
 - [Learn Foundry Tutorial](https://www.youtube.com/watch?v=Rp_V7bYiTCM)
-
