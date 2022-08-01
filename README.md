@@ -78,6 +78,8 @@ TODO
 - Migrate all the positions managed by your strategy via `Strategy.prepareMigration()`.
 - Make a list of all position tokens that should be protected against movements via `Strategy.protectedTokens()`.
 
+Check out vault docs from more info on [link](https://docs.yearn.finance/vaults/0.3.0/smart-contracts/BaseStrategy#adjustposition).
+
 ## Testing
 
 Tests run in fork environment, you need to complete [Installation and Setup](#installation-and-setup) step 6 to be able to run these commands.

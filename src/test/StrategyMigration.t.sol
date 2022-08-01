@@ -2,8 +2,6 @@
 pragma solidity ^0.8.12;
 
 import {StrategyFixture} from "./utils/StrategyFixture.sol";
-
-// NOTE: if the name of the strat or file changes this needs to be updated
 import {Strategy} from "../Strategy.sol";
 
 contract StrategyMigrationTest is StrategyFixture {
