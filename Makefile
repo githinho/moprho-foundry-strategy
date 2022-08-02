@@ -24,4 +24,4 @@ test-local  :; forge test
 trace-local  :; forge test -vvv
 clean  :; forge clean
 snapshot :; forge snapshot
-debug	:; forge test --debug "testVaultShutdownCanWithdraw" --fork-url ${FORK_URL}
+debug	:; forge test --debug "testBasicShutdown" --fork-url ${FORK_URL}
