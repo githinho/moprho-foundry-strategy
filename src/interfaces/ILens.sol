@@ -2,12 +2,15 @@
 pragma solidity ^0.8.12;
 
 interface ILens {
-    function getUserUnclaimedRewards(address[] calldata _poolTokenAddresses, address _user)
-        external
-        view
-        returns (uint256 unclaimedRewards);
+    function getUserUnclaimedRewards(
+        address[] calldata _poolTokenAddresses,
+        address _user
+    ) external view returns (uint256 unclaimedRewards);
 
-    function getCurrentSupplyBalanceInOf(address _poolTokenAddress, address _user)
+    function getCurrentSupplyBalanceInOf(
+        address _poolTokenAddress,
+        address _user
+    )
         external
         view
         returns (
