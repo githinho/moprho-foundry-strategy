@@ -2,11 +2,15 @@
 pragma solidity ^0.8.12;
 import "forge-std/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {StrategyFixture} from "./utils/StrategyFixture.sol";
 import {StrategyParams} from "../interfaces/Vault.sol";
+import {ITradeFactory} from "../interfaces/ySwap/ITradeFactory.sol";
 
 contract StrategyOperationsTest is StrategyFixture {
+    using SafeERC20 for IERC20;
+
     // setup is run on before each test
     function setUp() public override {
         // setup vault
@@ -58,10 +62,10 @@ contract StrategyOperationsTest is StrategyFixture {
         deal(address(want), user, _amount);
 
         uint256 balanceBefore = want.balanceOf(address(user));
-        vm.prank(user);
-        want.approve(address(vault), _amount);
-        vm.prank(user);
+        vm.startPrank(user);
+        want.safeApprove(address(vault), _amount);
         vault.deposit(_amount);
+        vm.stopPrank();
         assertRelApproxEq(want.balanceOf(address(vault)), _amount, DELTA);
 
         skip(3 minutes);
@@ -84,10 +88,10 @@ contract StrategyOperationsTest is StrategyFixture {
         deal(address(want), user, _amount);
 
         // Deposit to the vault
-        vm.prank(user);
-        want.approve(address(vault), _amount);
-        vm.prank(user);
+        vm.startPrank(user);
+        want.safeApprove(address(vault), _amount);
         vault.deposit(_amount);
+        vm.stopPrank();
         skip(1);
         vm.prank(strategist);
         strategy.harvest();
@@ -107,10 +111,10 @@ contract StrategyOperationsTest is StrategyFixture {
         deal(address(want), user, _amount);
 
         // Deposit to the vault
-        vm.prank(user);
-        want.approve(address(vault), _amount);
-        vm.prank(user);
+        vm.startPrank(user);
+        want.safeApprove(address(vault), _amount);
         vault.deposit(_amount);
+        vm.stopPrank();
         assertRelApproxEq(want.balanceOf(address(vault)), _amount, DELTA);
 
         uint256 beforePps = vault.pricePerShare();
@@ -122,10 +126,25 @@ contract StrategyOperationsTest is StrategyFixture {
         assertRelApproxEq(strategy.estimatedTotalAssets(), _amount, DELTA);
 
         // Add some code before harvest #2 to simulate earning yield
-        // Strategy earned some reward tokens
-        // uint256 rewardAmount = _amount;
-        vm.assume(_amount > strategy.minCompToClaimOrSell());
-        deal(address(strategy.COMP()), address(strategy), _amount);
+        // Strategy earned some reward tokens, param amount is adjusted to comp token decimals
+        uint256 compAmount = _amount * 10**(18 - vault.decimals());
+        vm.assume(compAmount > strategy.minCompToClaimOrSell());
+        deal(address(strategy.COMP()), address(strategy), compAmount);
+
+        // use tradefactory to execute swap reward tokens to want tokens.
+        ITradeFactory.AsyncTradeExecutionDetails memory ated = ITradeFactory.AsyncTradeExecutionDetails(
+            address(strategy),
+            address(strategy.COMP()),
+            address(want),
+            compAmount,
+            1
+        );
+        address[] memory path = new address[](3);
+        path[0] = strategy.COMP();
+        path[1] = address(weth);
+        path[2] = address(want);
+        vm.prank(yMechSafe);
+        tradeFactory.execute(ated, swapper, abi.encode(path));
 
         // Harvest 2: Realize profit
         skip(1);
@@ -133,6 +152,47 @@ contract StrategyOperationsTest is StrategyFixture {
         strategy.harvest();
         skip(6 hours);
 
+        // Validate profit
+        uint256 profit = want.balanceOf(address(vault));
+        assertGt(vault.pricePerShare(), beforePps);
+    }
+
+    function testProfitableHarvestWithoutTradeFactory(uint256 _amount) public {
+        vm.assume(_amount > minFuzzAmt && _amount < maxFuzzAmt);
+        deal(address(want), user, _amount);
+
+        // disable trade factory
+        vm.prank(strategist);
+        strategy.removeTradeFactoryPermissions();
+
+        // Deposit to the vault
+        vm.startPrank(user);
+        want.safeApprove(address(vault), _amount);
+        vault.deposit(_amount);
+        vm.stopPrank();
+        assertRelApproxEq(want.balanceOf(address(vault)), _amount, DELTA);
+
+        uint256 beforePps = vault.pricePerShare();
+
+        // Harvest 1: Send funds through the strategy
+        skip(1);
+        vm.prank(strategist);
+        strategy.harvest();
+        assertRelApproxEq(strategy.estimatedTotalAssets(), _amount, DELTA);
+
+        // Add some code before harvest #2 to simulate earning yield
+        // Strategy earned some reward tokens, param amount is adjusted to comp token decimals
+        uint256 compAmount = _amount * 10**(18 - vault.decimals());
+        vm.assume(compAmount > strategy.minCompToClaimOrSell());
+        deal(address(strategy.COMP()), address(strategy), compAmount);
+
+        // Harvest 2: Realize profit
+        skip(1);
+        vm.prank(strategist);
+        strategy.harvest();
+        skip(6 hours);
+
+        // Validate profit
         uint256 profit = want.balanceOf(address(vault));
         assertGt(want.balanceOf(address(strategy)) + profit, _amount);
         assertGt(vault.pricePerShare(), beforePps);
@@ -143,10 +203,10 @@ contract StrategyOperationsTest is StrategyFixture {
         deal(address(want), user, _amount);
 
         // Deposit to the vault and harvest
-        vm.prank(user);
-        want.approve(address(vault), _amount);
-        vm.prank(user);
+        vm.startPrank(user);
+        want.safeApprove(address(vault), _amount);
         vault.deposit(_amount);
+        vm.stopPrank();
         vm.prank(gov);
         vault.updateStrategyDebtRatio(address(strategy), 5_000);
         skip(1);
@@ -176,10 +236,10 @@ contract StrategyOperationsTest is StrategyFixture {
         deal(address(want), user, _amount);
 
         // Deposit to the vault
-        vm.prank(user);
-        want.approve(address(vault), _amount);
-        vm.prank(user);
+        vm.startPrank(user);
+        want.safeApprove(address(vault), _amount);
         vault.deposit(_amount);
+        vm.stopPrank();
         assertRelApproxEq(want.balanceOf(address(vault)), _amount, DELTA);
 
         uint256 beforePps = vault.pricePerShare();
@@ -257,10 +317,10 @@ contract StrategyOperationsTest is StrategyFixture {
         deal(address(want), user, _amount);
 
         // Deposit to the vault and harvest
-        vm.prank(user);
-        want.approve(address(vault), _amount);
-        vm.prank(user);
+        vm.startPrank(user);
+        want.safeApprove(address(vault), _amount);
         vault.deposit(_amount);
+        vm.stopPrank();
         vm.prank(gov);
         vault.updateStrategyDebtRatio(address(strategy), 5_000);
         skip(1);

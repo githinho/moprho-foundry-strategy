@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.12;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import {StrategyFixture} from "./utils/StrategyFixture.sol";
 
 contract StrategyRevokeTest is StrategyFixture {
+    using SafeERC20 for IERC20;
+
     function setUp() public override {
         super.setUp();
     }
@@ -13,10 +18,10 @@ contract StrategyRevokeTest is StrategyFixture {
         deal(address(want), user, _amount);
 
         // Deposit to the vault and harvest
-        vm.prank(user);
-        want.approve(address(vault), _amount);
-        vm.prank(user);
+        vm.startPrank(user);
+        want.safeApprove(address(vault), _amount);
         vault.deposit(_amount);
+        vm.stopPrank();
         skip(1);
         vm.prank(strategist);
         strategy.harvest();
@@ -35,10 +40,10 @@ contract StrategyRevokeTest is StrategyFixture {
         vm.assume(_amount > minFuzzAmt && _amount < maxFuzzAmt);
         deal(address(want), user, _amount);
 
-        vm.prank(user);
-        want.approve(address(vault), _amount);
-        vm.prank(user);
+        vm.startPrank(user);
+        want.safeApprove(address(vault), _amount);
         vault.deposit(_amount);
+        vm.stopPrank();
         skip(1);
         vm.prank(strategist);
         strategy.harvest();
