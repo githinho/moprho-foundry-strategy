@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.12;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import {StrategyFixture} from "./utils/StrategyFixture.sol";
 import {Strategy} from "../Strategy.sol";
 
 contract StrategyMigrationTest is StrategyFixture {
+    using SafeERC20 for IERC20;
+
     function setUp() public override {
         super.setUp();
     }
@@ -17,10 +22,10 @@ contract StrategyMigrationTest is StrategyFixture {
         deal(address(want), user, _amount);
 
         // Deposit to the vault and harvest
-        vm.prank(user);
-        want.approve(address(vault), _amount);
-        vm.prank(user);
+        vm.startPrank(user);
+        want.safeApprove(address(vault), _amount);
         vault.deposit(_amount);
+        vm.stopPrank();
         skip(1);
         vm.prank(strategist);
         strategy.harvest();
@@ -28,7 +33,9 @@ contract StrategyMigrationTest is StrategyFixture {
 
         // Migrate to a new strategy
         vm.prank(strategist);
-        Strategy newStrategy = Strategy(deployStrategy(address(vault)));
+        Strategy newStrategy = Strategy(
+            deployStrategy(address(vault), strategy.cTokenAdd())
+        );
         vm.prank(gov);
         vault.migrateStrategy(address(strategy), address(newStrategy));
         assertRelApproxEq(newStrategy.estimatedTotalAssets(), _amount, DELTA);

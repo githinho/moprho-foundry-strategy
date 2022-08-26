@@ -10,6 +10,7 @@ import {IVault} from "../../interfaces/Vault.sol";
 
 // NOTE: if the name of the strat or file changes this needs to be updated
 import {Strategy} from "../../Strategy.sol";
+import {ITradeFactory} from "../../interfaces/ySwap/ITradeFactory.sol";
 
 // Artifact paths for deploying from the deps folder, assumes that the command is run from
 // the project root.
@@ -23,8 +24,10 @@ contract StrategyFixture is ExtendedTest {
     Strategy public strategy;
     IERC20 public weth;
     IERC20 public want;
+    IERC20 public cToken;
 
     mapping(string => address) public tokenAddrs;
+    mapping(string => address) public cTokenAddrs;
     mapping(string => uint256) public tokenPrices;
 
     address public gov = 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52;
@@ -35,6 +38,13 @@ contract StrategyFixture is ExtendedTest {
     address public management = address(5);
     address public strategist = address(6);
     address public keeper = address(7);
+
+    ITradeFactory public constant tradeFactory =
+        ITradeFactory(0x7BAF843e06095f68F4990Ca50161C2C4E4e01ec6);
+    address public constant yMechSafe =
+        0x2C01B4AD51a67E2d8F02208F54dF9aC4c0B778B6;
+    address public constant swapper =
+        0x408Ec47533aEF482DC8fA568c36EC0De00593f44;
 
     uint256 public minFuzzAmt;
     // @dev maximum amount of want tokens deposited based on @maxDollarNotional
@@ -53,12 +63,14 @@ contract StrategyFixture is ExtendedTest {
         _setTokenAddrs();
 
         // Choose a token from the tokenAddrs mapping, see _setTokenAddrs for options
-        string memory token = "DAI";
+        string memory token = "USDC";
         weth = IERC20(tokenAddrs["WETH"]);
         want = IERC20(tokenAddrs[token]);
+        cToken = IERC20(cTokenAddrs[token]);
 
         (address _vault, address _strategy) = deployVaultAndStrategy(
             address(want),
+            address(cToken),
             gov,
             rewards,
             "",
@@ -71,18 +83,20 @@ contract StrategyFixture is ExtendedTest {
         vault = IVault(_vault);
         strategy = Strategy(_strategy);
 
-        minFuzzAmt = 10**vault.decimals() / 10;
+        uint256 decimals = vault.decimals();
+        minFuzzAmt = 10**decimals;
         maxFuzzAmt =
             uint256(maxDollarNotional / tokenPrices[token]) *
-            10**vault.decimals();
+            10**decimals;
         bigAmount =
             uint256(bigDollarNotional / tokenPrices[token]) *
-            10**vault.decimals();
+            10**decimals;
 
         // add more labels to make your traces readable
         vm.label(address(vault), "Vault");
         vm.label(address(strategy), "Strategy");
         vm.label(address(want), "Want");
+        vm.label(address(cToken), "cToken");
         vm.label(gov, "Gov");
         vm.label(user, "User");
         vm.label(whale, "Whale");
@@ -127,8 +141,18 @@ contract StrategyFixture is ExtendedTest {
     }
 
     // Deploys a strategy
-    function deployStrategy(address _vault) public returns (address) {
-        Strategy _strategy = new Strategy(_vault);
+    function deployStrategy(address _vault, address _cTokenAdd)
+        public
+        returns (address)
+    {
+        Strategy _strategy = new Strategy(_vault, _cTokenAdd);
+
+        vm.startPrank(yMechSafe);
+        tradeFactory.grantRole(tradeFactory.STRATEGY(), address(_strategy));
+        vm.stopPrank();
+
+        vm.prank(gov);
+        _strategy.setTradeFactory(address(tradeFactory));
 
         return address(_strategy);
     }
@@ -136,6 +160,7 @@ contract StrategyFixture is ExtendedTest {
     // Deploys a vault and strategy attached to vault
     function deployVaultAndStrategy(
         address _token,
+        address _cTokenAdd,
         address _gov,
         address _rewards,
         string memory _name,
@@ -157,7 +182,7 @@ contract StrategyFixture is ExtendedTest {
         IVault _vault = IVault(_vaultAddr);
 
         vm.prank(_strategist);
-        _strategyAddr = deployStrategy(_vaultAddr);
+        _strategyAddr = deployStrategy(_vaultAddr, _cTokenAdd);
         Strategy _strategy = Strategy(_strategyAddr);
 
         vm.prank(_strategist);
@@ -177,6 +202,9 @@ contract StrategyFixture is ExtendedTest {
         tokenAddrs["USDT"] = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
         tokenAddrs["DAI"] = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
         tokenAddrs["USDC"] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        cTokenAddrs["DAI"] = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+        cTokenAddrs["USDT"] = 0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9;
+        cTokenAddrs["USDC"] = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
     }
 
     function _setTokenPrices() internal {
