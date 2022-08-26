@@ -10,7 +10,6 @@
 ## Rug-ability
 
 - Multisig: ?
-- Upgradable Contracts: Yes, using [proxy](https://developers.morpho.xyz/contracts-overview).
 
 ## Audit Reports
 
@@ -21,7 +20,7 @@ Put links.
 
 ### Summary
 
-aa
+add
 
 ### Current APY
 
