@@ -132,13 +132,14 @@ contract StrategyOperationsTest is StrategyFixture {
         deal(address(strategy.COMP()), address(strategy), compAmount);
 
         // use tradefactory to execute swap reward tokens to want tokens.
-        ITradeFactory.AsyncTradeExecutionDetails memory ated = ITradeFactory.AsyncTradeExecutionDetails(
-            address(strategy),
-            address(strategy.COMP()),
-            address(want),
-            compAmount,
-            1
-        );
+        ITradeFactory.AsyncTradeExecutionDetails memory ated = ITradeFactory
+            .AsyncTradeExecutionDetails(
+                address(strategy),
+                address(strategy.COMP()),
+                address(want),
+                compAmount,
+                1
+            );
         address[] memory path = new address[](3);
         path[0] = strategy.COMP();
         path[1] = address(weth);

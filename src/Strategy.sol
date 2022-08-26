@@ -24,9 +24,11 @@ contract Strategy is BaseStrategy {
     //ySwap TradeFactory:
     address public tradeFactory;
     // Morpho is a contract to handle interaction with the protocol
-    IMorpho public constant MORPHO = IMorpho(0x8888882f8f843896699869179fB6E4f7e3B58888);
+    IMorpho public constant MORPHO =
+        IMorpho(0x8888882f8f843896699869179fB6E4f7e3B58888);
     // Lens is a contract to fetch data about Morpho protocol
-    ILens public constant LENS = ILens(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67);
+    ILens public constant LENS =
+        ILens(0x930f1b46e1D081Ec1524efD95752bE3eCe51EF67);
     // cTokenAdd = Morpho Market for want token, address of cToken
     address public immutable cTokenAdd;
     // COMP = Compound token
@@ -39,8 +41,10 @@ contract Strategy is BaseStrategy {
     // Minimum amount of COMP to be claimed or sold
     uint256 public minCompToClaimOrSell = 0.1 ether;
 
-    IUniswapV2Router01 private constant UNI_V2_ROUTER = IUniswapV2Router01(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
-    IUniswapV2Router01 private constant SUSHI_V2_ROUTER = IUniswapV2Router01(0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F);
+    IUniswapV2Router01 private constant UNI_V2_ROUTER =
+        IUniswapV2Router01(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+    IUniswapV2Router01 private constant SUSHI_V2_ROUTER =
+        IUniswapV2Router01(0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F);
 
     constructor(address _vault, address _cTokenAdd) BaseStrategy(_vault) {
         // cTokenAdd = Morpho Market for want token, address of cToken
@@ -303,7 +307,4 @@ contract Strategy is BaseStrategy {
         IERC20(COMP).safeApprove(tradeFactory, 0);
         tradeFactory = address(0);
     }
-
-
-
 }

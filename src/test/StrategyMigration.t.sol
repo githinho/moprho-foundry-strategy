@@ -33,7 +33,9 @@ contract StrategyMigrationTest is StrategyFixture {
 
         // Migrate to a new strategy
         vm.prank(strategist);
-        Strategy newStrategy = Strategy(deployStrategy(address(vault), strategy.cTokenAdd()));
+        Strategy newStrategy = Strategy(
+            deployStrategy(address(vault), strategy.cTokenAdd())
+        );
         vm.prank(gov);
         vault.migrateStrategy(address(strategy), address(newStrategy));
         assertRelApproxEq(newStrategy.estimatedTotalAssets(), _amount, DELTA);
